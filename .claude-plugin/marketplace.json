@@ -8,7 +8,7 @@
     {
       "name": "oh-my-edits",
       "description": "Set up the Edits MCP and an iPhone driver, tune the Edits inspiration feed, and run mobile Edits work as skills.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./",
       "author": {
         "name": "NomaDamas"
