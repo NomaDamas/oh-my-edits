@@ -1,0 +1,38 @@
+{
+  "name": "oh-my-edits",
+  "version": "0.1.0",
+  "description": "Harness for Meta's Edits app: set up the Edits MCP and an iPhone driver (ipb), tune the Edits inspiration feed through an interview, and turn mobile-only Edits work into agent skills.",
+  "author": {
+    "name": "NomaDamas",
+    "url": "https://github.com/NomaDamas"
+  },
+  "homepage": "https://github.com/NomaDamas/oh-my-edits",
+  "repository": "https://github.com/NomaDamas/oh-my-edits",
+  "license": "Apache-2.0",
+  "keywords": [
+    "edits",
+    "instagram",
+    "reels",
+    "video-editing",
+    "mcp",
+    "iphone",
+    "ipb"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "oh-my-edits",
+    "shortDescription": "Agent harness for Meta's Edits app",
+    "longDescription": "Connect your agent to the Edits Mac app through its local MCP server, drive the Edits iPhone app with ipb, and tune the Edits inspiration feed through a short interview. Not affiliated with Meta.",
+    "developerName": "NomaDamas",
+    "category": "Creativity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/NomaDamas/oh-my-edits",
+    "defaultPrompt": [
+      "Set up oh-my-edits on this Mac",
+      "Tune my Edits inspiration feed"
+    ]
+  }
+}
