@@ -19,6 +19,7 @@ Edits has two halves. The Mac app exposes a local MCP server, so an agent can al
 
 - macOS with the Edits Mac app, for the MCP surface
 - An iPhone on iOS 27 or later with the Edits app and [ipb](https://github.com/ipbtools/ipb), for the phone surface
+- [uv](https://docs.astral.sh/uv/), which runs the phone helper (`scripts/phone.py`) and fetches its Python dependencies
 - Claude Code or Codex
 
 ## Install

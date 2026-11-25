@@ -10,7 +10,7 @@ oh-my-edits works on two surfaces. Set up only the surfaces the user's goal need
 | Surface | What runs it | Needed for |
 |---|---|---|
 | Edits Mac app | The app's local MCP server | Editing projects, export, captions, music |
-| Edits iPhone app | [ipb](https://github.com/ipbtools/ipb) (CoreDevice HID) | Inspiration feed settings, saved reels, anything only the mobile app has |
+| Edits iPhone app | [ipb](https://github.com/ipbtools/ipb) (CoreDevice HID), through the plugin's `scripts/phone.py` helper | Inspiration feed settings, saved reels, anything only the mobile app has |
 
 ## 1. Interview
 
@@ -43,12 +43,55 @@ Known behavior (Edits 457.0.0):
 
 ## 3. iPhone with ipb
 
-1. Install ipb by following its README. It needs macOS with CoreDevice and an iPhone on iOS 27 or later.
-2. Run `ipb doctor`. Continue only with `0 failure(s)`. A `transport: localNetwork` warning is acceptable. USB is more reliable, and accessibility reads (`ipb ui`) need USB.
-3. The phone must be unlocked with the screen on. A locked phone returns a black screenshot. Stop and ask the user to unlock it.
-4. Take one screenshot (`ipb screenshot`) and confirm with the user that it shows their phone.
+The phone is driven through the helper `scripts/phone.py` in this plugin. It wraps [ipb](https://github.com/ipbtools/ipb) and checks a fresh screenshot (Apple Vision OCR, Korean and English) before every action. Do not call `ipb tap`, `ipb text`, or `ipb scroll` yourself.
 
-The phone helper (screen-checked taps, OCR, text entry) is tracked in the repository issues. Until it lands, drive ipb directly and look at a fresh screenshot before every tap.
+**Plugin root.** It is two levels above this skill's directory: the folder that holds `skills/` and `scripts/`. Below, `<plugin-root>` stands for it. The helper needs [uv](https://docs.astral.sh/uv/) (it fetches its own Python dependencies on the first run, which can take several seconds) and macOS.
+
+1. Install ipb by following its README. It needs macOS with CoreDevice and an iPhone on iOS 27 or later.
+2. Run `uv run <plugin-root>/scripts/phone.py doctor`. It runs `ipb doctor` and ends with `doctor: PASS` or `doctor: FAIL`. Continue only on PASS (`0 failure(s)`). A `transport: localNetwork` warning is acceptable. USB is more reliable, and accessibility reads (`ipb ui`) need USB.
+3. The phone must be unlocked with the screen on. A locked phone returns a black screenshot, and the helper stops with "Screenshot is dark". Ask the user to unlock it.
+4. Capture one screen and confirm with the user that it shows their phone:
+
+    ```
+    uv run <plugin-root>/scripts/phone.py run <<'PY'
+    # task: Set up oh-my-edits.
+    # step: Capture one screen to confirm the phone.
+    import os, tempfile
+    path = os.path.join(tempfile.mkdtemp(prefix="edits-setup-"), "screen.png")
+    ph_observe(all_text=True, capture_path=path)
+    print(path)
+    PY
+    ```
+
+    Open the image, ask the user to confirm it, then delete it.
+
+### Running phone scripts
+
+Pass a Python script on stdin to `uv run <plugin-root>/scripts/phone.py run`. The first two lines must be `# task:` (the whole job) and `# step:` (what this script does). The helper prints both to stderr, flushes output line by line, and exits with an error line that names the script line that failed. Run one small step per call.
+
+| Function | What it does |
+|---|---|
+| `ph_observe(contains=None, capture_path=None, all_text=False)` | Fresh capture and OCR. `contains=[...]` returns only the matching lines. `all_text=True` returns the whole screen as a `Screen`, which hides its text when printed. `capture_path` also saves the image to a new owner-only file |
+| `ph_find(text)` | Lines containing `text`, top to bottom, each with `x`, `y` (centre, points), `w`, `h`, and `match` (`exact` or `partial`). For a partial match inside a longer line, `x` and `w` are estimated, and the whole line's `line_x` and `line_w` are kept |
+| `ph_screen_size()` | Screen width and height in points |
+| `ph_wait(expected, timeout=12, absent=())` | Wait until every expected label is visible and no absent label is |
+| `ph_tap(label, on_screen, expected, ...)` | Tap the one line that is `label`, after the `on_screen` labels are confirmed in a fresh capture. Then require a new `expected` label, or an `absent` label to disappear |
+| `ph_tap_tab(label, on_screen, expected, lift=0, ...)` | The same for a bottom tab-bar label. `expected` must be a label only the destination shows |
+| `ph_tap_point(x, y, on_screen=None, allow_danger=False)` | Tap a point after a fresh capture shows the `on_screen` labels. For icons and for text inside a longer line (use `ph_find` for the point) |
+| `ph_type_text(text, replace=False)` | Paste into the focused field and require the text on screen. Answers the one-time "Allow Paste" prompt. Overwrites the phone's clipboard. `replace=True` replaces the field's content |
+| `ph_scroll(direction, on_screen, amount=0.3, at=None)` | One scroll after a screen check; returns the screen after |
+| `ph_home()` | Home Screen |
+
+Rules the helper enforces:
+
+- Coordinates are points: screenshot pixels divided by 3. `ph_find` and `ph_screen_size` already use points.
+- Labels match case-insensitively. Leading and trailing glyphs are ignored (`Projects •` matches `Projects`), a label may sit inside a longer OCR line, and OCR look-alikes are treated as equal (`I`, `l`, `1`, `|`; `0`, `O`), so `AI tools` matches `Al tools`. A label under three characters matches only a whole line when it proves a screen. Use distinctive labels.
+- `ph_tap` and `ph_tap_tab` refuse a label that is only inside a longer line, or that appears twice. Locate it with `ph_find` and tap with `ph_tap_point`.
+- A tap is refused near a destructive label (Delete, Remove, Reset, Erase, Sign out, and the Korean equivalents) unless you pass `allow_danger=True` for a target the user approved.
+- Every ipb call has a time bound. A call that outlives it is killed and raises a timeout error. Its effect on the phone is unknown, so observe the screen before you repeat it.
+- Print only the labels you need. Do not print whole-screen results.
+
+Status: unit-tested and OCR-checked on a synthetic image. Not yet run end to end on a device, and the `ph_scroll` direction is unverified. Treat the first device run as the check.
 
 ## Safety
 
