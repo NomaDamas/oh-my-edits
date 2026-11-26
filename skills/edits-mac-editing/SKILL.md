@@ -12,10 +12,11 @@ Before you start, the `edits` MCP server must answer `state` (see `edits-setup`)
 ## Workflow
 
 1. **Read first.** Call `state`, `tracks`, and `elements` before any edit. `state.projectName` can show a wrong name (seen: "test"), so read `state.projectTitle` and confirm the open project by its elements. The tool list follows the screen: project tools such as `duplicateProject` appear only on the home screen, after `closeProject`.
-2. **Keep the window still.** Keyframe, mask, and selection tools act at the playhead. Ask the user not to click or play in the Edits window while the agent edits, because a click moves the playhead and keyframes land at the wrong time.
-3. **One edit, one read-back.** After each edit, read the element again with `getElement`, `elements`, `getTransformKeyframes`, or `exactElementValues`.
-4. **Fix layer order.** New text and shapes go to any free track. After adding them, check the order and correct it with `moveToLayer`.
-5. **Verify on an export.** Export under `~/Movies`, then poll `exportStatus` until it reports completion, because `export` returns before the file is written. Then measure the file (for example ffmpeg `ssim`, `psnr`, `ebur128`). `captureFrame` shows washed-out colors, so do not judge color from it.
+2. **Settle color before cutting camera footage.** Probe each source with `ffprobe -show_streams`: `color_transfer` `arib-std-b67` is HLG and `bt709` is SDR. Log footage (for example Apple Log) is not reliably told apart by tags, so ask which camera app recorded it. Pick the LUT for that source from the user's camera notes, or ask, and decide HDR or SDR export at the same time. Fixing color after the cuts costs a second export and a second review. See "Apply a LUT" below.
+3. **Keep the window still.** Keyframe, mask, and selection tools act at the playhead. Ask the user not to click or play in the Edits window while the agent edits, because a click moves the playhead and keyframes land at the wrong time.
+4. **One edit, one read-back.** After each edit, read the element again with `getElement`, `elements`, `getTransformKeyframes`, or `exactElementValues`.
+5. **Fix layer order.** New text and shapes go to any free track. After adding them, check the order and correct it with `moveToLayer`.
+6. **Verify on an export.** Set the export settings right before each export, because an HDR setting resets to SDR after the project is reopened. Export under `~/Movies`, then poll `exportStatus` until it reports completion, because `export` returns before the file is written. Then measure the file (for example ffmpeg `ssim`, `psnr`, `ebur128`). `captureFrame` shows washed-out colors, so do not judge color from it.
 
 ## Units
 
@@ -54,6 +55,13 @@ The user may edit the same project in the app between agent turns. Before the ne
 
 Keep the user's changes. Do not restore an element the user deleted.
 
+### Apply a LUT
+
+`importLUT` loads a `.cube` file and applies it to the selected clip. On HLG iPhone footage, the export was bluer and darker than the same `.cube` applied with ffmpeg `lut3d` to the HLG signal (red mean 120 vs 166, luma median 168 vs 210 on the same frame). Edits probably applies the LUT after its own HDR conversion, so a LUT built for the camera signal does not get that signal.
+
+- When the color must match the LUT, bake it outside Edits: run ffmpeg `lut3d` on the source, write a new file under `~/Movies`, and put it in with `replaceElementMedia`. A source with the same length keeps the cuts.
+- When `importLUT` is enough, compare one exported frame with an ffmpeg reference before telling the user the color is done.
+
 ### Animate a shape
 
 `addShape` draws the shape on a transparent image the size of the whole canvas. Transform keyframes move and scale that whole image, so a shape away from the center drifts twice as far and shrinks toward the canvas center. Choose one:
@@ -81,6 +89,14 @@ Field values are in source pixels: the full canvas size for a shape, or the imag
 Edits stores a keyframe time as (playhead - clip start), floored to 1/600 s. A clip that starts at 0.0667 s can store 0.065 s instead of 0.0667 s. Either start the clip at 0 s, or add 0.0001 s to each time you pass to `setTransformKeyframes`. Check the stored times with `getTransformKeyframes` or `exactElementValues`.
 
 `setTransformKeyframes` removes the element's opacity keyframes. Set position and scale keyframes first, then opacity.
+
+On a clip with changed speed, the two keyframe tools use different units:
+
+- `setTransformKeyframes` `time` is timeline seconds from the clip start. A 0.47 s transition on a 2.4x clip played over 0.47 s of the timeline.
+- `setKeyframeEasing` `seconds` is the stored value, `sourceInPoint` plus the relative time. Any other value fails, and the error lists `keyframeTimes`. Call it once with a wrong value (for example 0) to get the list, then use those values.
+- `getTransformKeyframes` shows timeline times.
+
+To zoom so that source point (cx, cy) sits at the canvas center at scale z, set position x = 0.5 + (0.5 - cx) * z and y = 0.5 + (0.5 - cy) * z. Position is the clip center.
 
 More observed behavior for text, tracks, and audio is in [references/pitfalls.md](references/pitfalls.md).
 

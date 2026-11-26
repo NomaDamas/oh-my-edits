@@ -31,7 +31,15 @@ Edits 457.0.0 on macOS. Each item was seen in a real project and checked by read
 ## Inspection and export
 
 - `captureFrame` returns colors that look washed out. Exported colors are correct.
-- A 9:16 project exports as 1440x2560 HEVC at 30 fps with the default settings. `setExportSettings` was not tested.
+- A 9:16 project exports as 1440x2560 HEVC at 30 fps with the default settings.
+- `setExportSettings` HDR (HLG, 10-bit) resets to SDR (8-bit bt709) after `closeProject` and `openProject`. Set it again right before each export and check the file with `ffprobe`.
+- `importLUT` color differs from ffmpeg `lut3d` on HLG footage (bluer, darker). See "Apply a LUT" in `SKILL.md`.
+
+## Speed and keyframes
+
+- `setSpeed` on a main clip ripples: later main clips move. Read `elements` after each speed change.
+- On a speed-changed clip, `setTransformKeyframes` takes timeline seconds from the clip start, but `setKeyframeEasing` takes `sourceInPoint` plus that time. See "Set keyframe times exactly" in `SKILL.md`.
+- `setKeyframeEasing` preset 3 is ease-in-out.
 - `export` returns before the file is complete. Poll `exportStatus` until it reports completion before reading the file.
 - `state.projectName` showed "test" for a project with another name. `state.projectTitle` was correct.
 - The tool list follows the screen. `duplicateProject`, `duplicateViaMcomp`, `exportMcomp`, and `importMcomp` appear only on the home screen.
