@@ -11,11 +11,11 @@ Before you start, the `edits` MCP server must answer `state` (see `edits-setup`)
 
 ## Workflow
 
-1. **Read first.** Call `state`, `tracks`, and `elements` before any edit. `state` can show a stale project name after a rename or a failed project switch, so confirm the open project by its elements.
+1. **Read first.** Call `state`, `tracks`, and `elements` before any edit. `state.projectName` can show a wrong name (seen: "test"), so read `state.projectTitle` and confirm the open project by its elements. The tool list follows the screen: project tools such as `duplicateProject` appear only on the home screen, after `closeProject`.
 2. **Keep the window still.** Keyframe, mask, and selection tools act at the playhead. Ask the user not to click or play in the Edits window while the agent edits, because a click moves the playhead and keyframes land at the wrong time.
 3. **One edit, one read-back.** After each edit, read the element again with `getElement`, `elements`, `getTransformKeyframes`, or `exactElementValues`.
 4. **Fix layer order.** New text and shapes go to any free track. After adding them, check the order and correct it with `moveToLayer`.
-5. **Verify on an export.** Export under `~/Movies`, then measure the file (for example ffmpeg `ssim`, `psnr`, `ebur128`). `captureFrame` shows washed-out colors, so do not judge color from it.
+5. **Verify on an export.** Export under `~/Movies`, then poll `exportStatus` until it reports completion, because `export` returns before the file is written. Then measure the file (for example ffmpeg `ssim`, `psnr`, `ebur128`). `captureFrame` shows washed-out colors, so do not judge color from it.
 
 ## Units
 
@@ -26,6 +26,33 @@ Before you start, the `edits` MCP server must answer `state` (see `edits-setup`)
 - `setVolume` is linear gain: 1 is 0 dB, 10 is +20 dB.
 
 ## Recipes
+
+### Work on a copy
+
+Keep the user's project untouched and edit a copy:
+
+1. `saveProject` in the editor. Without it, the home screen showed a stale length for the project.
+2. `closeProject`, then `duplicateProject` on the home screen. The copy is named "<name> copy". Change it with `renameProject`.
+3. `openProject` the copy and confirm it by `state.projectTitle`.
+
+The copy points at the same media files as the original and keeps the same element ids. Never overwrite a media file the copy uses, because the original changes too. Write new media under a new file name. `copy` and `paste` clipboards are per project, so they cannot move elements between projects.
+
+### Swap in a pre-rendered clip
+
+When an effect is easier to render outside Edits (a counter, a rewind, a composite), render it as a video with the same length and frame rate as the clip it replaces, then call `replaceElementMedia` on that clip. A same-length source keeps the element id, start time, and transform, so overlays and sounds around it stay in sync.
+
+- A shorter source shortens the main clip and pulls every later main clip left, together with the overlays and library sound effects attached to them. The voiceover and music tracks stay where they were, so they fall out of sync. Re-check every audio start after a length change.
+- `replaceElementMedia` rejects a file that is already in the media bin ("no alias"). Use a new file name, or add the existing item with `addMediaPanelItemsToTimeline` instead.
+
+### Pick up the user's edits
+
+The user may edit the same project in the app between agent turns. Before the next edit:
+
+1. Read `elements` and compare it with the last list the agent saw. Look for new, removed, and moved elements.
+2. Map clips to files with `mediaBin` (`includeReferenced: true`): it lists each alias with its file name.
+3. A changed `sourceDuration` in `getElement` shows that the user replaced the media of a clip.
+
+Keep the user's changes. Do not restore an element the user deleted.
 
 ### Animate a shape
 

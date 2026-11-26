@@ -9,6 +9,9 @@ Edits 457.0.0 on macOS. Each item was seen in a real project and checked by read
 - `addOverlay` places a photo for 3 s by default, on a new track each time.
 - A transparent 1440x2560 PNG added with x 0.5, y 0.5, and scale 1 covers a 9:16 canvas 1:1. Use this to add pre-rendered text, for example captions with shadows.
 - Placing a clip at the end of a track fails with "occupied" when its start equals the previous clip's end. Start it 0.001 s later.
+- Deleting a main clip also deletes the overlays and library sound effects that sit in its time span. Read `elements` after the delete and add back what should stay.
+- An audio or overlay track that becomes empty is removed. A later call with its old `trackId` fails with "track not found". Add without `trackId` to get a new track.
+- `addMediaPanelItemsToTimeline` floors an audio item's length to whole frames (a 14.3999 s wav became 14.3667 s).
 
 ## Text
 
@@ -22,11 +25,14 @@ Edits 457.0.0 on macOS. Each item was seen in a real project and checked by read
 - The export has no limiter. True peaks can go above 0 dBTP, and a loudly mastered song peaks about 1.2 dB higher in the AAC export than in the input.
 - `setDucking` (`any`, 0.5) on a wav added with `addMediaPanelItemsToTimeline` did not duck: two exports with and without it were the same. Bake volume ramps into the audio file and add it as one clip.
 - `replaceAudio` accepts only songs from the music library and rejects imported wav files.
-- `addSoundEffect` places the sound at the playhead on a new audio track.
+- `addSoundEffect` places the sound at the playhead. It goes on any audio track that has room there, which can be the voiceover track, or on a new track. Check its track with `elements` and move it if needed.
 - After `splitAt` on an audio clip, deleting the middle piece does not move the later piece.
 
 ## Inspection and export
 
 - `captureFrame` returns colors that look washed out. Exported colors are correct.
 - A 9:16 project exports as 1440x2560 HEVC at 30 fps with the default settings. `setExportSettings` was not tested.
+- `export` returns before the file is complete. Poll `exportStatus` until it reports completion before reading the file.
+- `state.projectName` showed "test" for a project with another name. `state.projectTitle` was correct.
+- The tool list follows the screen. `duplicateProject`, `duplicateViaMcomp`, `exportMcomp`, and `importMcomp` appear only on the home screen.
 - `exactElementValues` and `getTransformKeyframes` return the stored keyframe times and values, including floored times.
