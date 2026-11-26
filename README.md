@@ -12,6 +12,7 @@ Edits has two halves. The Mac app exposes a local MCP server, so an agent can al
 |---|---|---|
 | `edits-setup` | Interviews you, connects your agent to the Edits Mac app's MCP server, and prepares [ipb](https://github.com/ipbtools/ipb) to drive the iPhone app | Ready |
 | `edits-inspiration` | Interviews you about what to see more and less of, then fills the **Your inspiration** topic lists on the phone and verifies each one | Ready |
+| `edits-mac-editing` | Builds and changes videos in the Edits Mac app through its MCP server: text, shapes, masks, keyframes, audio levels, and export checks, with the tool behavior observed in Edits 457.0.0 | Ready |
 | Reference search in Edits | Find reference reels in the Inspiration feed | Planned ([issues](https://github.com/NomaDamas/oh-my-edits/issues)) |
 | Saved reels sorting | Sort and label reels saved in the Ideas tab | Planned |
 
