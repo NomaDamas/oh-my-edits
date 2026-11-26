@@ -57,7 +57,7 @@ Keep the user's changes. Do not restore an element the user deleted.
 
 ### Apply a LUT
 
-`importLUT` loads a `.cube` file and applies it to the selected clip. On HLG iPhone footage, the export was bluer and darker than the same `.cube` applied with ffmpeg `lut3d` to the HLG signal (red mean 120 vs 166, luma median 168 vs 210 on the same frame). Edits probably applies the LUT after its own HDR conversion, so a LUT built for the camera signal does not get that signal.
+`importLUT` loads a `.cube` file and applies it to the selected clip. On HLG iPhone footage, the export was bluer and darker than the same `.cube` applied with ffmpeg `lut3d` to the HLG signal (red mean 120 vs 166, luma median 168 vs 210 on the same frame). A possible cause (unverified): Edits applies the LUT after its own HDR conversion, so a LUT built for the camera signal does not get that signal.
 
 - When the color must match the LUT, bake it outside Edits: run ffmpeg `lut3d` on the source, write a new file under `~/Movies`, and put it in with `replaceElementMedia`. A source with the same length keeps the cuts.
 - When `importLUT` is enough, compare one exported frame with an ffmpeg reference before telling the user the color is done.
